@@ -1,7 +1,6 @@
-FROM node:16-alpine3.11
+FROM node:12
 LABEL name="test@gmail.com"
-WORKDIR /app
-RUN "node:16-alpine3.11"
+RUN "npm install --silent"
 ADD . /app
 ENTRYPOINT ["node"]
-CMD ["[ "node", "server.js" ]"]
+CMD ["index.js"]
