@@ -19,6 +19,10 @@ export class Server {
         sendChecker: "START",
         downloadedPercent: "",
       };
+      let downloadedFileSize = 0;
+      let downloadedPercent = "";
+      let fileName = "";
+      let fileSize = 0;
 
       this.clients.push(ws);
       console.log("Connected total:", this.clients.length);
@@ -69,9 +73,44 @@ export class Server {
           ws.send(JSON.stringify(sandMessage));
         } else if (handler === "fileInfo") {
           const JsonMessage = JSON.parse(message);
-          const fileName = JsonMessage.fileName;
-          const fileSize = JsonMessage.fileSize;
+          fileSize = JsonMessage.fileSize;
+          fileName = JsonMessage.fileName;
           console.log("fileName: ", fileName);
+
+          fs.readdir("./", (err, fileList) => {
+            const pointIndex = fileName.lastIndexOf(".");
+            let fileCounter = 0;
+
+            if (pointIndex !== -1) {
+              const fileExtension = fileName.slice(pointIndex);
+              const onlyFileName = fileName.replace(fileExtension, "");
+
+              const checkFileName = (name: string) => name === fileName;
+              while (fileList.find(checkFileName)) {
+                fileCounter += 1;
+                fileName =
+                  onlyFileName +
+                  "(" +
+                  fileCounter.toString() +
+                  ")" +
+                  fileExtension;
+              }
+            }
+          });
+          sandMessage.sendChecker = "DATA";
+          ws.send(JSON.stringify(sandMessage));
+          handler = "data";
+        } else if (handler === "data" && message.toString() !== "DONE") {
+          downloadedFileSize += message.length;
+          downloadedPercent = `${Math.round(
+            (downloadedFileSize / fileSize) * 100
+          )}%`;
+          fs.appendFileSync(`./${fileName}`, message);
+          sandMessage.downloadedPercent = downloadedPercent;
+          sandMessage.sendChecker = "DOWNLOADING";
+          ws.send(JSON.stringify(sandMessage));
+          // handler = "check";
+        } else if (message.toString() === "DONE") {
         }
       });
     });
