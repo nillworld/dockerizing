@@ -69,7 +69,7 @@ export class Server {
             }
           );
           handler = "fileInfo";
-          sandMessage.sendChecker = "FILEINFO";
+          sandMessage.sendChecker = "FILE_INFO";
           ws.send(JSON.stringify(sandMessage));
         } else if (handler === "fileInfo") {
           const JsonMessage = JSON.parse(message);
