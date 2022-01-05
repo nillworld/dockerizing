@@ -39,35 +39,20 @@ export class Server {
       //메세지 핸들러,클라이언트가 메세지를 보내게되면 여기서 받는다.
       ws.on("message", (message: string) => {
         if (handler === "dockerForm") {
-          const options = JSON.parse(message);
-          console.log("check!", options);
-          fs.writeFile(
-            "../project/Dockerfile",
-            `FROM ${
-              options.from ? `${options.from}` : `node:12`
-            }\nLABEL name="test@gmail.com"\n${
-              options.workdir ? `WORKDIR ${options.workdir}\n` : ``
-            }RUN "${
-              options.run ? `${options.from}` : `npm install --silent`
-            }"\nADD . /app\nENTRYPOINT ["${
-              options.entrypoint ? `${options.entrypoint}` : `node`
-            }"]\nCMD ["${options.cmd ? `${options.cmd}` : `index.js`}"]\n${
-              options.env ? `ENV ${options.env}\n` : ``
-            }${options.arg ? `ARG ${options.arg}` : ``}`,
-            function (err) {
-              if (err === null) {
-                console.log("success");
-                // exec("docker", (err, out, stderr) => {
-                //   // console.log("docker exec", out);
-                //   // console.log("docker exec err", err);
-                //   console.log("docker exec stderr", stderr);
-                //   ws.send("docker exec", out);
-                // });
-              } else {
-                console.log("fail");
-              }
+          console.log("check!", message.toString());
+          fs.writeFile("../project/Dockerfile", message, function (err) {
+            if (err === null) {
+              console.log("success");
+              // exec("docker", (err, out, stderr) => {
+              //   // console.log("docker exec", out);
+              //   // console.log("docker exec err", err);
+              //   console.log("docker exec stderr", stderr);
+              //   ws.send("docker exec", out);
+              // });
+            } else {
+              console.log("fail");
             }
-          );
+          });
           handler = "fileInfo";
           sandMessage.sendChecker = "FILE_INFO";
           ws.send(JSON.stringify(sandMessage));
