@@ -40,7 +40,7 @@ export class Server {
       ws.on("message", (message: string) => {
         console.log("check!", message.toString());
         if (handler === "dockerForm") {
-          fs.writeFile("../project/Dockerfile", message, function (err) {
+          fs.writeFile("./project/Dockerfile", message, function (err) {
             if (err === null) {
               console.log("success");
               // exec("docker", (err, out, stderr) => {
