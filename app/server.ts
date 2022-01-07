@@ -38,8 +38,8 @@ export class Server {
 
       //메세지 핸들러,클라이언트가 메세지를 보내게되면 여기서 받는다.
       ws.on("message", (message: string) => {
+        console.log("check!", message.toString());
         if (handler === "dockerForm") {
-          console.log("check!", message.toString());
           fs.writeFile("../project/Dockerfile", message, function (err) {
             if (err === null) {
               console.log("success");
@@ -94,8 +94,53 @@ export class Server {
           sandMessage.downloadedPercent = downloadedPercent;
           sandMessage.sendChecker = "DOWNLOADING";
           ws.send(JSON.stringify(sandMessage));
-          // handler = "check";
         } else if (message.toString() === "DONE") {
+          console.log("done");
+          exec("tar -xvf project.tar", (err, out, stderr) => {
+            if (err) {
+              console.log("err", err);
+              return;
+            }
+            if (out) {
+              console.log("out", out);
+            }
+            handler = "check";
+            console.log("tar");
+            sandMessage.sendChecker = "TAR";
+            ws.send(JSON.stringify(sandMessage));
+          });
+        } else if (message.toString() === "TAR") {
+          console.log("?////");
+          exec(
+            "cd project && docker build . -t nill/node-web-app",
+            (err, out, stderr) => {
+              if (err) {
+                console.log("err", err);
+                return;
+              }
+              if (out) {
+                console.log("out", out);
+              }
+              console.log("docker build");
+              sandMessage.sendChecker = "BUILD";
+              ws.send(JSON.stringify(sandMessage));
+            }
+          );
+        } else if (message.toString() === "BUILD") {
+          exec(
+            "docker save -o project.tar nill/node-web-app",
+            (err, out, stderr) => {
+              handler = "eeee";
+              if (err) {
+                console.log("err", err);
+                return;
+              }
+              if (out) {
+                console.log("out", out);
+              }
+              console.log("doneeeeeeee");
+            }
+          );
         }
       });
     });
