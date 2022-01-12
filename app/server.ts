@@ -14,7 +14,7 @@ export class Server {
 
     //웹소켓 연결 핸들러, 연결이 되면 진행됨!
     this.wss.on("connection", (ws: any) => {
-      let handler = "dockerForm";
+      let handler: string;
       let sandMessage = {
         sendChecker: "START",
         downloadedPercent: "",
@@ -39,7 +39,10 @@ export class Server {
       //메세지 핸들러,클라이언트가 메세지를 보내게되면 여기서 받는다.
       ws.on("message", (message: string) => {
         console.log("check!", message.toString());
-        if (handler === "dockerForm") {
+        if (message.toString() === "GENERATOR_START") {
+          handler === "dockerForm";
+          ws.send("DOCKER_FORM");
+        } else if (handler === "dockerForm") {
           fs.writeFile("./project/Dockerfile", message, function (err) {
             if (err === null) {
               console.log("success");
