@@ -184,6 +184,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/ws@npm:^8.2.2":
+  version: 8.2.2
+  resolution: "@types/ws@npm:8.2.2"
+  dependencies:
+    "@types/node": "*"
+  checksum: 308957864b9a5a0378ac82f1b084fa31b1bbe85106fb0d84ed2b392e4829404f21ab6ab2c1eb782d556e59cd33d57c75ad2d0cedc4b9b9d0ca3b2311bc915578
+  languageName: node
+  linkType: hard
+
 "abbrev@npm:1":
   version: 1.1.1
   resolution: "abbrev@npm:1.1.1"
@@ -1405,10 +1414,11 @@ __metadata:
   dependencies:
     "@types/express": ^4.17.13
     "@types/node": ^16.11.10
+    "@types/ws": ^8.2.2
     ts-node: ^10.4.0
     ts-node-dev: ^1.1.8
     typescript: ^4.5.2
-    ws: ^8.2.3
+    ws: ^8.4.1
   languageName: unknown
   linkType: soft
 
@@ -1439,9 +1449,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ws@npm:^8.2.3":
-  version: 8.4.0
-  resolution: "ws@npm:8.4.0"
+"ws@npm:^8.4.1":
+  version: 8.4.1
+  resolution: "ws@npm:8.4.1"
   peerDependencies:
     bufferutil: ^4.0.1
     utf-8-validate: ^5.0.2
@@ -1450,7 +1460,7 @@ __metadata:
       optional: true
     utf-8-validate:
       optional: true
-  checksum: 5e37ccf0ecb8d8019d88b07af079e8f74248b688ad3109ab57cd5e1c9a7392545f572914d0c27f25e8b83a6cfc09a89ac151c556ff4fae26d6f824077e4f8239
+  checksum: 0e9b52005589d7f0938faddfaf775ec3be492829089ad2d95cf09b2ae7ec8c760aa67fc850e7f6c8071e182c441026aacbf8a01547e64fe673db6b9f5c98c3e3
   languageName: node
   linkType: hard
 

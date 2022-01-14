@@ -1,7 +1,8 @@
 import * as fs from "fs";
 import { exec } from "child_process";
+import * as WebSocket from "ws";
 
-const WebSocketS = require("ws").Server;
+const WebSocketS = WebSocket.Server;
 
 export class Server {
   public clients: any = [];
@@ -38,28 +39,33 @@ export class Server {
 
       //메세지 핸들러,클라이언트가 메세지를 보내게되면 여기서 받는다.
       ws.on("message", (message: string) => {
-        console.log("check!", message.toString());
-        if (message.toString() === "GENERATOR_START") {
-          handler === "dockerForm";
+        const jsonMessage = JSON.parse(message);
+        if (jsonMessage.state === "GENERATOR_START") {
+          handler = "dockerForm";
           ws.send("DOCKER_FORM");
-        } else if (handler === "dockerForm") {
-          fs.writeFile("./project/Dockerfile", message, function (err) {
-            if (err === null) {
-              console.log("success");
-              // exec("docker", (err, out, stderr) => {
-              //   // console.log("docker exec", out);
-              //   // console.log("docker exec err", err);
-              //   console.log("docker exec stderr", stderr);
-              //   ws.send("docker exec", out);
-              // });
-            } else {
-              console.log("fail");
+        } else if ((jsonMessage.state = "MAKE_DOCKER_FILE")) {
+          console.log("docker 만들기");
+          fs.writeFile(
+            "./project/Dockerfile",
+            jsonMessage.dockerForm,
+            function (err) {
+              if (err === null) {
+                console.log("success");
+                // exec("docker", (err, out, stderr) => {
+                //   // console.log("docker exec", out);
+                //   // console.log("docker exec err", err);
+                //   console.log("docker exec stderr", stderr);
+                //   ws.send("docker exec", out);
+                // });
+              } else {
+                console.log("fail");
+              }
             }
-          });
+          );
           handler = "fileInfo";
           sandMessage.sendChecker = "FILE_INFO";
           ws.send(JSON.stringify(sandMessage));
-        } else if (handler === "fileInfo") {
+        } else if (handler === "fileInfoㄹㄹㄹ") {
           const JsonMessage = JSON.parse(message);
           fileSize = JsonMessage.fileSize;
           fileName = JsonMessage.fileName;
