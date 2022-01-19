@@ -41,6 +41,7 @@ export class Server {
       ws.on("message", (message: string) => {
         if (handler !== "fileData") {
           const jsonMessage = JSON.parse(message);
+          console.log(jsonMessage);
           if (jsonMessage.state === "GENERATOR_START") {
             handler = "dockerForm";
           } else if (jsonMessage.state === "MAKE_DOCKER_FILE") {
@@ -92,7 +93,21 @@ export class Server {
               }
             });
             sandMessage.state = "SET_FILE_INFO";
-            handler = "fileData";
+            // handler = "fileData";
+            ws.send(JSON.stringify(sandMessage));
+          } else if (jsonMessage.state === "UPLOADING_FROM_BACK") {
+            downloadedFileSize += jsonMessage.value.length;
+            downloadedPercent = `${Math.round(
+              (downloadedFileSize / fileSize) * 100
+            )}%`;
+            console.log(jsonMessage.value.data);
+            fs.appendFileSync(
+              `./project/${fileName}`,
+              ///////////////////////// 버퍼 파일 append가 안됨. 이상한 형태의 파일이 생성됨.
+              jsonMessage.value.toString()
+            );
+            sandMessage.state = "DOWNLOADING_FROM_BACK";
+            sandMessage.downloadedPercent = downloadedPercent;
             ws.send(JSON.stringify(sandMessage));
           }
 
