@@ -131,8 +131,8 @@ export class Server {
             (downloadedFileSize / fileSize) * 100
           )}%`;
           fs.appendFileSync(`./project/${fileName}`, message);
+          sandMessage.state = "DOWNLOADING_FROM_BACK";
           sandMessage.downloadedPercent = downloadedPercent;
-          sandMessage.state = "DOWNLOADING";
           ws.send(JSON.stringify(sandMessage));
         } else if (message.toString() === "DONE") {
           console.log("done");
