@@ -17,7 +17,7 @@ export class Server {
     this.wss.on("connection", (ws: any) => {
       let handler: string;
       let sandMessage = {
-        sendChecker: "START",
+        state: "START",
         downloadedPercent: "",
       };
       let downloadedFileSize = 0;
@@ -39,69 +39,100 @@ export class Server {
 
       //메세지 핸들러,클라이언트가 메세지를 보내게되면 여기서 받는다.
       ws.on("message", (message: string) => {
-        const jsonMessage = JSON.parse(message);
-        if (jsonMessage.state === "GENERATOR_START") {
-          handler = "dockerForm";
-          ws.send("DOCKER_FORM");
-        } else if ((jsonMessage.state = "MAKE_DOCKER_FILE")) {
-          console.log("docker 만들기");
-          fs.writeFile(
-            "./project/Dockerfile",
-            jsonMessage.dockerForm,
-            function (err) {
-              if (err === null) {
-                console.log("success");
-                // exec("docker", (err, out, stderr) => {
-                //   // console.log("docker exec", out);
-                //   // console.log("docker exec err", err);
-                //   console.log("docker exec stderr", stderr);
-                //   ws.send("docker exec", out);
-                // });
-              } else {
-                console.log("fail");
+        if (handler !== "fileData") {
+          const jsonMessage = JSON.parse(message);
+          if (jsonMessage.state === "GENERATOR_START") {
+            handler = "dockerForm";
+          } else if (jsonMessage.state === "MAKE_DOCKER_FILE") {
+            console.log("docker 만들기");
+            fs.writeFile(
+              "./project/Dockerfile",
+              jsonMessage.dockerForm,
+              function (err) {
+                if (err === null) {
+                  console.log("success");
+                  sandMessage.state = "MADE_DOCKER_FILE";
+                  ws.send(JSON.stringify(sandMessage));
+                  // exec("docker", (err, out, stderr) => {
+                  //   // console.log("docker exec", out);
+                  //   // console.log("docker exec err", err);
+                  //   console.log("docker exec stderr", stderr);
+                  //   ws.send("docker exec", out);
+                  // });
+                } else {
+                  console.log("fail");
+                }
               }
-            }
-          );
-          handler = "fileInfo";
-          sandMessage.sendChecker = "FILE_INFO";
-          ws.send(JSON.stringify(sandMessage));
-        } else if (handler === "fileInfoㄹㄹㄹ") {
-          const JsonMessage = JSON.parse(message);
-          fileSize = JsonMessage.fileSize;
-          fileName = JsonMessage.fileName;
-          console.log("fileName: ", fileName);
+            );
+            // handler = "data";
+            // sandMessage.state = "FILE_INFO";
+            // ws.send(JSON.stringify(sandMessage));
+          } else if (jsonMessage.state === "SET_FILE_INFO") {
+            fileSize = jsonMessage.fileSize;
+            fileName = jsonMessage.fileName;
+            fs.readdir("./project", (err, fileList) => {
+              console.log(fileList);
+              const pointIndex = fileName.lastIndexOf(".");
+              let fileCounter = 0;
 
-          fs.readdir("./", (err, fileList) => {
-            const pointIndex = fileName.lastIndexOf(".");
-            let fileCounter = 0;
+              if (pointIndex !== -1) {
+                const fileExtension = fileName.slice(pointIndex);
+                const onlyFileName = fileName.replace(fileExtension, "");
 
-            if (pointIndex !== -1) {
-              const fileExtension = fileName.slice(pointIndex);
-              const onlyFileName = fileName.replace(fileExtension, "");
-
-              const checkFileName = (name: string) => name === fileName;
-              while (fileList.find(checkFileName)) {
-                fileCounter += 1;
-                fileName =
-                  onlyFileName +
-                  "(" +
-                  fileCounter.toString() +
-                  ")" +
-                  fileExtension;
+                const checkFileName = (name: string) => name === fileName;
+                while (fileList.find(checkFileName)) {
+                  fileCounter += 1;
+                  fileName =
+                    onlyFileName +
+                    "(" +
+                    fileCounter.toString() +
+                    ")" +
+                    fileExtension;
+                }
               }
-            }
-          });
-          sandMessage.sendChecker = "DATA";
-          ws.send(JSON.stringify(sandMessage));
-          handler = "data";
-        } else if (handler === "data" && message.toString() !== "DONE") {
+            });
+            sandMessage.state = "SET_FILE_INFO";
+            handler = "fileData";
+            ws.send(JSON.stringify(sandMessage));
+          }
+
+          // } else if (handler === "fileInfoㄹㄹㄹ") {
+          //   const JsonMessage = JSON.parse(message);
+          //   fileSize = JsonMessage.fileSize;
+          //   fileName = JsonMessage.fileName;
+          //   console.log("fileName: ", fileName);
+
+          //   fs.readdir("./", (err, fileList) => {
+          //     const pointIndex = fileName.lastIndexOf(".");
+          //     let fileCounter = 0;
+
+          //     if (pointIndex !== -1) {
+          //       const fileExtension = fileName.slice(pointIndex);
+          //       const onlyFileName = fileName.replace(fileExtension, "");
+
+          //       const checkFileName = (name: string) => name === fileName;
+          //       while (fileList.find(checkFileName)) {
+          //         fileCounter += 1;
+          //         fileName =
+          //           onlyFileName +
+          //           "(" +
+          //           fileCounter.toString() +
+          //           ")" +
+          //           fileExtension;
+          //       }
+          //     }
+          //   });
+          //   sandMessage.state = "DATA";
+          //   ws.send(JSON.stringify(sandMessage));
+          //   handler = "data";
+        } else if (handler === "fileData" && message.toString() !== "DONE") {
           downloadedFileSize += message.length;
           downloadedPercent = `${Math.round(
             (downloadedFileSize / fileSize) * 100
           )}%`;
-          fs.appendFileSync(`./${fileName}`, message);
+          fs.appendFileSync(`./project/${fileName}`, message);
           sandMessage.downloadedPercent = downloadedPercent;
-          sandMessage.sendChecker = "DOWNLOADING";
+          sandMessage.state = "DOWNLOADING";
           ws.send(JSON.stringify(sandMessage));
         } else if (message.toString() === "DONE") {
           console.log("done");
@@ -115,7 +146,7 @@ export class Server {
             }
             handler = "check";
             console.log("tar");
-            sandMessage.sendChecker = "TAR";
+            sandMessage.state = "TAR";
             ws.send(JSON.stringify(sandMessage));
           });
         } else if (message.toString() === "TAR") {
@@ -131,7 +162,7 @@ export class Server {
                 console.log("out", out);
               }
               console.log("docker build");
-              sandMessage.sendChecker = "BUILD";
+              sandMessage.state = "BUILD";
               ws.send(JSON.stringify(sandMessage));
             }
           );
