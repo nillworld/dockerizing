@@ -100,11 +100,11 @@ export class Server {
             downloadedPercent = `${Math.round(
               (downloadedFileSize / fileSize) * 100
             )}%`;
-            console.log(jsonMessage.value.data);
+            // console.log(jsonMessage.value.data);
             fs.appendFileSync(
               `./project/${fileName}`,
               ///////////////////////// 버퍼 파일 append가 안됨. 이상한 형태의 파일이 생성됨.
-              jsonMessage.value.toString()
+              jsonMessage.value
             );
             sandMessage.state = "DOWNLOADING_FROM_BACK";
             sandMessage.downloadedPercent = downloadedPercent;
