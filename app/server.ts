@@ -41,7 +41,7 @@ export class Server {
       ws.on("message", (message: string) => {
         if (handler !== "fileData") {
           const jsonMessage = JSON.parse(message);
-          console.log(jsonMessage);
+          // console.log(jsonMessage);
           if (jsonMessage.state === "GENERATOR_START") {
             handler = "dockerForm";
           } else if (jsonMessage.state === "MAKE_DOCKER_FILE") {
