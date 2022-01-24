@@ -68,8 +68,7 @@ export class Server {
             // handler = "data";
             // sandMessage.state = "FILE_INFO";
             // ws.send(JSON.stringify(sandMessage));
-          } else if (jsonMessage.state === "SET_FILE_INFO") {
-            fileSize = jsonMessage.fileSize;
+          } else if (jsonMessage.state === "SET_FILE_NAME") {
             fileName = jsonMessage.fileName;
             fs.readdir("./project", (err, fileList) => {
               console.log(fileList);
@@ -92,16 +91,22 @@ export class Server {
                 }
               }
             });
-            sandMessage.state = "SET_FILE_INFO";
+            sandMessage.state = "SET_FILE_NAME";
             // handler = "fileData";
             ws.send(JSON.stringify(sandMessage));
           } else if (jsonMessage.state === "UPLOADING_FROM_BACK") {
+            if (fileSize === 0) {
+              fileSize = jsonMessage.fileSize;
+            }
             downloadedFileSize += jsonMessage.value.length;
             downloadedPercent = `${Math.round(
               (downloadedFileSize / fileSize) * 100
             )}%`;
-            // console.log(jsonMessage.value.data);
-            fs.appendFileSync(`./project/${fileName}`, jsonMessage.value);
+            console.log(jsonMessage.value);
+            fs.appendFileSync(
+              `./project/${fileName}`,
+              Buffer.from(jsonMessage.value, "base64")
+            );
             sandMessage.state = "DOWNLOADING_FROM_BACK";
             sandMessage.downloadedPercent = downloadedPercent;
             ws.send(JSON.stringify(sandMessage));
