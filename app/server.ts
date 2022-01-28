@@ -150,6 +150,12 @@ export class Server {
 
           // load 커맨드> docker load -i project.tar
         } else if (jsonMessage.state === "SEND_TAR_FROM_GENERATOR") {
+          const BUFFER_SIZE = 1024;
+          let pos = 0;
+          fs.readFile("test.js", (err, data) => {
+            senderToBack("SENDING_TAR_FROM_GENERATOR", data.toString());
+            console.log(data.toString());
+          });
         } else if (message.toString() === "DONE") {
           console.log("done");
           exec("tar -xvf project.tar", (err, out, stderr) => {
