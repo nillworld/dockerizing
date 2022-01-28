@@ -1,6 +1,6 @@
 import * as fs from "fs";
 import * as tar from "tar";
-import { exec, spawn } from "child_process";
+import { exec, spawn, spawnSync } from "child_process";
 import * as WebSocket from "ws";
 const WebSocketS = WebSocket.Server;
 
@@ -17,7 +17,7 @@ export class Server {
     this.wss.on("connection", (ws: any) => {
       let sandMessage = {
         state: "START",
-        downloadedPercent: "",
+        value: "",
       };
       let downloadedFileSize = 0;
       let downloadedPercent = "";
@@ -28,6 +28,14 @@ export class Server {
       console.log("Connected total:", this.clients.length);
 
       ws.on("message", (message: string) => {
+        const senderToBack = (state: string, value?: string) => {
+          sandMessage.state = state;
+          if (value) {
+            sandMessage.value = value;
+          }
+          ws.send(JSON.stringify(sandMessage));
+        };
+
         const jsonMessage = JSON.parse(message);
         // console.log(jsonMessage);
         if (jsonMessage.state === "GENERATOR_START") {
@@ -41,8 +49,7 @@ export class Server {
               function (err) {
                 if (err === null) {
                   console.log("success");
-                  sandMessage.state = "MADE_DOCKER_FILE";
-                  ws.send(JSON.stringify(sandMessage));
+                  senderToBack("MADE_DOCKER_FILE");
                   // exec("docker", (err, out, stderr) => {
                   //   // console.log("docker exec", out);
                   //   // console.log("docker exec err", err);
@@ -79,20 +86,17 @@ export class Server {
               }
             }
           });
-          sandMessage.state = "SET_FILE_INFO";
-          ws.send(JSON.stringify(sandMessage));
+          senderToBack("SET_FILE_INFO");
         } else if (jsonMessage.state === "UPLOADING_FROM_BACK") {
           downloadedFileSize += jsonMessage.value.length;
           downloadedPercent = `${Math.round(
             (downloadedFileSize / fileSize) * 100
           )}%`;
           fs.appendFileSync(`./project/${fileName}`, jsonMessage.value);
-          sandMessage.state = "DOWNLOADING_FROM_BACK";
-          sandMessage.downloadedPercent = downloadedPercent;
-          ws.send(JSON.stringify(sandMessage));
+          senderToBack("DOWNLOADING_FROM_BACK", downloadedPercent);
+
           if (downloadedFileSize === fileSize) {
-            sandMessage.state = "GENERATOR_DOWNLOAD_DONE";
-            ws.send(JSON.stringify(sandMessage));
+            senderToBack("GENERATOR_DOWNLOAD_DONE");
           }
         } else if (jsonMessage.state === "GENERATOR_TAR_DECOMPRESS") {
           tar
@@ -106,8 +110,7 @@ export class Server {
               } catch (error) {
                 console.log("Error:", error);
               }
-              sandMessage.state = "GENERATOR_TAR_DECOMPRESS_DONE";
-              ws.send(JSON.stringify(sandMessage));
+              senderToBack("GENERATOR_TAR_DECOMPRESS_DONE");
             });
         } else if (jsonMessage.state === "GENERATOR_DOCKER_BUILD") {
           console.log("yeh");
@@ -131,11 +134,22 @@ export class Server {
               try {
                 fs.rmdirSync("./project", { recursive: true });
                 console.log(`project dir is deleted!`);
+                senderToBack("GENERATOR_DOCKER_BUILD_DONE");
               } catch (err) {
                 console.error(`Error while deleting project dir.`);
               }
             }
           });
+        } else if (jsonMessage.state === "GENERATOR_DOCKER_SAVE") {
+          spawnSync("docker", ["save", "-o", "project.tar", "tobesoft"]);
+          spawn("docker", ["rmi", "tobesoft:iot-project"]);
+          console.log(
+            "도커 이미지 tar로 save 완료 및 docker 이미지 삭제 완료. "
+          );
+          senderToBack("GENERATOR_DOCKER_SAVE_DONE");
+
+          // load 커맨드> docker load -i project.tar
+        } else if (jsonMessage.state === "SEND_TAR_FROM_GENERATOR") {
         } else if (message.toString() === "DONE") {
           console.log("done");
           exec("tar -xvf project.tar", (err, out, stderr) => {
