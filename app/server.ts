@@ -28,7 +28,7 @@ export class Server {
       console.log("Connected total:", this.clients.length);
 
       ws.on("message", (message: string) => {
-        const senderToBack = (state: string, value?: string) => {
+        const senderToBack = (state: string, value?: any) => {
           sandMessage.state = state;
           if (value) {
             sandMessage.value = value;
@@ -37,6 +37,7 @@ export class Server {
         };
 
         const jsonMessage = JSON.parse(message);
+        let tarFile: fs.StatsBase<number>;
         // console.log(jsonMessage);
         if (jsonMessage.state === "GENERATOR_START") {
         } else if (jsonMessage.state === "MAKE_DOCKER_FILE") {
@@ -143,64 +144,33 @@ export class Server {
         } else if (jsonMessage.state === "GENERATOR_DOCKER_SAVE") {
           spawnSync("docker", ["save", "-o", "project.tar", "tobesoft"]);
           spawn("docker", ["rmi", "tobesoft:iot-project"]);
+          spawn("docker", ["rmi", "tobesoft:iot-project"]);
+          tarFile = fs.statSync("./test.jpg");
           console.log(
-            "도커 이미지 tar로 save 완료 및 docker 이미지 삭제 완료. "
+            "도커 이미지 tar로 save 완료 및 docker 이미지 삭제 완료. ",
+            tarFile
           );
-          senderToBack("GENERATOR_DOCKER_SAVE_DONE");
+          fileSize = tarFile.size;
+          senderToBack("GENERATOR_DOCKER_SAVE_DONE", fileSize);
 
           // load 커맨드> docker load -i project.tar
         } else if (jsonMessage.state === "SEND_TAR_FROM_GENERATOR") {
+          console.log("여기2");
           const BUFFER_SIZE = 1024;
           let pos = 0;
-          fs.readFile("test.js", (err, data) => {
-            senderToBack("SENDING_TAR_FROM_GENERATOR", data.toString());
-            console.log(data.toString());
-          });
-        } else if (message.toString() === "DONE") {
-          console.log("done");
-          exec("tar -xvf project.tar", (err, out, stderr) => {
-            if (err) {
-              console.log("err", err);
-              return;
-            }
-            if (out) {
-              console.log("out", out);
-            }
-            console.log("tar");
-            sandMessage.state = "TAR";
-            ws.send(JSON.stringify(sandMessage));
-          });
-        } else if (message.toString() === "TAR") {
-          console.log("?////");
-          exec(
-            "cd project && docker build . -t nill/node-web-app",
-            (err, out, stderr) => {
-              if (err) {
-                console.log("err", err);
-                return;
-              }
-              if (out) {
-                console.log("out", out);
-              }
-              console.log("docker build");
-              sandMessage.state = "BUILD";
+          fs.readFile("test.jpg", (err, data) => {
+            while (pos != fileSize) {
+              sandMessage.state = "SENDING_TAR_FROM_GENERATOR";
+              sandMessage.value = data.slice(pos, pos + BUFFER_SIZE).toString();
               ws.send(JSON.stringify(sandMessage));
-            }
-          );
-        } else if (message.toString() === "BUILD") {
-          exec(
-            "docker save -o project.tar nill/node-web-app",
-            (err, out, stderr) => {
-              if (err) {
-                console.log("err", err);
-                return;
+
+              pos = pos + BUFFER_SIZE;
+              if (pos > fileSize) {
+                pos = fileSize;
               }
-              if (out) {
-                console.log("out", out);
-              }
-              console.log("doneeeeeeee");
             }
-          );
+          });
+        } else if (jsonMessage.state === "DOWNLOAD_DONE_FROM_GENERATOR") {
         }
       });
     });
