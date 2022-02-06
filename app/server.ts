@@ -21,6 +21,7 @@ export class Server {
       };
       let downloadedFileSize = 0;
       let downloadedPercent = "";
+      let tarFile: fs.StatsBase<number>;
       let fileName = "";
       let fileSize = 0;
 
@@ -37,7 +38,6 @@ export class Server {
         };
 
         const jsonMessage = JSON.parse(message);
-        let tarFile: fs.StatsBase<number>;
         // console.log(jsonMessage);
         if (jsonMessage.state === "GENERATOR_START") {
         } else if (jsonMessage.state === "MAKE_DOCKER_FILE") {
@@ -51,20 +51,13 @@ export class Server {
                 if (err === null) {
                   console.log("success");
                   senderToBack("MADE_DOCKER_FILE");
-                  // exec("docker", (err, out, stderr) => {
-                  //   // console.log("docker exec", out);
-                  //   // console.log("docker exec err", err);
-                  //   console.log("docker exec stderr", stderr);
-                  //   ws.send("docker exec", out);
-                  // });
                 } else {
                   console.log("fail");
                 }
               }
             );
           });
-        } else if (jsonMessage.state === "SET_FILE_INFO") {
-          fileSize = jsonMessage.fileSize;
+        } else if (jsonMessage.state === "SET_FILE_NAME") {
           fileName = jsonMessage.fileName;
           fs.readdir("./project", (err, fileList) => {
             console.log(fileList);
@@ -87,13 +80,20 @@ export class Server {
               }
             }
           });
-          senderToBack("SET_FILE_INFO");
+          senderToBack("SET_FILE_NAME");
         } else if (jsonMessage.state === "UPLOADING_FROM_BACK") {
+          console.log("@#@$", jsonMessage.fileSize, jsonMessage.value.length);
+          if (fileSize === 0) {
+            fileSize = jsonMessage.fileSize;
+          }
           downloadedFileSize += jsonMessage.value.length;
           downloadedPercent = `${Math.round(
             (downloadedFileSize / fileSize) * 100
           )}%`;
-          fs.appendFileSync(`./project/${fileName}`, jsonMessage.value);
+          fs.appendFileSync(
+            `./project/${fileName}`,
+            Buffer.from(jsonMessage.value, "base64")
+          );
           senderToBack("DOWNLOADING_FROM_BACK", downloadedPercent);
 
           if (downloadedFileSize === fileSize) {
@@ -145,29 +145,34 @@ export class Server {
           spawnSync("docker", ["save", "-o", "project.tar", "tobesoft"]);
           spawn("docker", ["rmi", "tobesoft:iot-project"]);
           spawn("docker", ["rmi", "tobesoft:iot-project"]);
-          tarFile = fs.statSync("./test.jpg");
           console.log(
-            "도커 이미지 tar로 save 완료 및 docker 이미지 삭제 완료. ",
-            tarFile
+            "도커 이미지 tar로 save 완료 및 docker 이미지 삭제 완료. "
           );
-          fileSize = tarFile.size;
-          senderToBack("GENERATOR_DOCKER_SAVE_DONE", fileSize);
+          senderToBack("GENERATOR_DOCKER_SAVE_DONE");
 
           // load 커맨드> docker load -i project.tar
         } else if (jsonMessage.state === "SEND_TAR_FROM_GENERATOR") {
           console.log("여기2");
-          const BUFFER_SIZE = 1024;
+          const BUFFER_SIZE_MEGA = 1048576;
           let pos = 0;
-          fs.readFile("test.jpg", (err, data) => {
+          fs.readFile("project.tar", (err, data) => {
+            const dataBase64 = data.toString("base64");
+            fileSize = dataBase64.length;
+            senderToBack("GENERATOR_DOCKER_SIZE", fileSize);
+            sandMessage.state = "SENDING_TAR_FROM_GENERATOR";
             while (pos != fileSize) {
-              sandMessage.state = "SENDING_TAR_FROM_GENERATOR";
-              sandMessage.value = data.slice(pos, pos + BUFFER_SIZE).toString();
+              sandMessage.value = dataBase64.slice(pos, pos + BUFFER_SIZE_MEGA);
               ws.send(JSON.stringify(sandMessage));
 
-              pos = pos + BUFFER_SIZE;
+              pos = pos + BUFFER_SIZE_MEGA;
               if (pos > fileSize) {
                 pos = fileSize;
               }
+            }
+            try {
+              fs.unlinkSync("./project.tar");
+            } catch (error) {
+              console.log("Error:", error);
             }
           });
         } else if (jsonMessage.state === "DOWNLOAD_DONE_FROM_GENERATOR") {
