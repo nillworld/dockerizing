@@ -121,7 +121,7 @@ export class Server {
             "./project/Dockerfile",
             "-t",
             "tobesoft:iot-project",
-            ".",
+            "./project",
           ]);
           // dockerBuild.stdout.on("data", (message) => {
           // console.log("stdout", message.toString());
