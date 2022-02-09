@@ -10,12 +10,15 @@ export class Server {
   public server: any = null;
 
   public start(port: number) {
+    type Message = {
+      state: string;
+      value?: string;
+    };
     this.wss = new WebSocketS({ port: port });
     console.log("WebSocket Initialized", port);
 
-    //웹소켓 연결 핸들러, 연결이 되면 진행됨!
     this.wss.on("connection", (ws: any) => {
-      let sandMessage = {
+      let sandMessage: Message = {
         state: "START",
         value: "",
       };
@@ -143,7 +146,6 @@ export class Server {
           });
         } else if (jsonMessage.state === "GENERATOR_DOCKER_SAVE") {
           spawnSync("docker", ["save", "-o", "project.tar", "tobesoft"]);
-          spawn("docker", ["rmi", "tobesoft:iot-project"]);
           spawn("docker", ["rmi", "tobesoft:iot-project"]);
           console.log(
             "도커 이미지 tar로 save 완료 및 docker 이미지 삭제 완료. "
