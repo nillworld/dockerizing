@@ -121,7 +121,7 @@ export class Server {
             "./project/Dockerfile",
             "-t",
             "tobesoft:iot-project",
-            "./project",
+            ".",
           ]);
           // dockerBuild.stdout.on("data", (message) => {
           // console.log("stdout", message.toString());
@@ -155,25 +155,35 @@ export class Server {
           console.log("여기2");
           const BUFFER_SIZE_MEGA = 1048576;
           let pos = 0;
-          fs.readFile("project.tar", (err, data) => {
-            const dataBase64 = data.toString("base64");
-            fileSize = dataBase64.length;
-            senderToBack("GENERATOR_DOCKER_SIZE", fileSize);
-            sandMessage.state = "SENDING_TAR_FROM_GENERATOR";
-            while (pos != fileSize) {
-              sandMessage.value = dataBase64.slice(pos, pos + BUFFER_SIZE_MEGA);
-              ws.send(JSON.stringify(sandMessage));
+          // fs.readFile("project.tar", (err, data) => {
+          //   const dataBase64 = data.toString("base64");
+          //   fileSize = dataBase64.length;
+          //   senderToBack("GENERATOR_DOCKER_SIZE", fileSize);
+          //   sandMessage.state = "SENDING_TAR_FROM_GENERATOR";
+          //   while (pos != fileSize) {
+          //     sandMessage.value = dataBase64.slice(pos, pos + BUFFER_SIZE_MEGA);
+          //     ws.send(JSON.stringify(sandMessage));
 
-              pos = pos + BUFFER_SIZE_MEGA;
-              if (pos > fileSize) {
-                pos = fileSize;
-              }
-            }
-            try {
-              fs.unlinkSync("./project.tar");
-            } catch (error) {
-              console.log("Error:", error);
-            }
+          //     pos = pos + BUFFER_SIZE_MEGA;
+          //     if (pos > fileSize) {
+          //       pos = fileSize;
+          //     }
+          //   }
+          //   try {
+          //     fs.unlinkSync("./project.tar");
+          //   } catch (error) {
+          //     console.log("Error:", error);
+          //   }
+          // });
+
+          senderToBack("GENERATOR_DOCKER_SIZE", 1000000000);
+          sandMessage.state = "SENDING_TAR_FROM_GENERATOR";
+
+          const testStream = fs.createReadStream("./project.tar");
+          testStream.on("data", (fileData) => {
+            const streamToString = fileData.toString("base64");
+            sandMessage.value = streamToString;
+            ws.send(JSON.stringify(sandMessage));
           });
         } else if (jsonMessage.state === "DOWNLOAD_DONE_FROM_GENERATOR") {
         }
