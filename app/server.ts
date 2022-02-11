@@ -126,6 +126,8 @@ export class Server {
           // > docker buildx build --platform linux/amd64,linux/arm/v7 -f ./project/Dockerfile -t test:0.1 --push .
           const dockerBuild = spawn("docker", [
             "build",
+            "--platform",
+            jsonMessage.value,
             "-f",
             "./project/Dockerfile",
             "-t",
@@ -186,11 +188,22 @@ export class Server {
 
           senderToBack("GENERATOR_DOCKER_SIZE", 1000000000);
           sandMessage.state = "SENDING_TAR_FROM_GENERATOR";
-
           const testStream = fs.createReadStream("./project.tar");
+          let streamCount = 0;
+          let appendedStreamData = "";
           testStream.on("data", (fileData) => {
-            const streamToString = fileData.toString("base64");
-            sandMessage.value = streamToString;
+            //
+            /////////////////// 이건 왜 안될까... 파일이 다운로드 받는 쪽에서 제대로 파일을 append를 못함.
+            // const streamToString = fileData.toString("base64");
+            // streamCount += 1;
+            // appendedStreamData += streamToString;
+            // if (streamCount > 100) {
+            //   sandMessage.value = appendedStreamData;
+            //   ws.send(JSON.stringify(sandMessage));
+            //   streamCount = 0;
+            //   appendedStreamData = "";
+            // }
+            sandMessage.value = fileData.toString("base64");
             ws.send(JSON.stringify(sandMessage));
           });
         } else if (jsonMessage.state === "DOWNLOAD_DONE_FROM_GENERATOR") {
