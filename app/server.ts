@@ -118,6 +118,12 @@ export class Server {
             });
         } else if (jsonMessage.state === "GENERATOR_DOCKER_BUILD") {
           console.log("yeh");
+          // <Docker Multi-Archtecture Image set>
+          // 먼저 멀티 빌더 셋팅
+          // docker buildx create --name [builder instance 명] --driver [드라이버 이름] --use
+          // > docker buildx create --name multi-arch-builder --driver docker-container --use multi-arch-builder
+          // 멀티 환경으로 도커 빌드
+          // > docker buildx build --platform linux/amd64,linux/arm/v7 -f ./project/Dockerfile -t test:0.1 --push .
           const dockerBuild = spawn("docker", [
             "build",
             "-f",
