@@ -161,9 +161,11 @@ export class Server {
           senderToBack("GENERATOR_DOCKER_SAVE_DONE");
 
           // load 커맨드> docker load -i project.tar
+        } else if (jsonMessage.state === "SEND_FILE_SIZE_FROM_GENERATOR") {
+          senderToBack("GENERATOR_DOCKER_SIZE", 1000000000);
         } else if (jsonMessage.state === "SEND_TAR_FROM_GENERATOR") {
           console.log("여기2");
-          const BUFFER_SIZE_MEGA = 1048576;
+          const BUFFER_SIZE_MEGA = 524288;
           let pos = 0;
           // fs.readFile("project.tar", (err, data) => {
           //   const dataBase64 = data.toString("base64");
@@ -186,9 +188,11 @@ export class Server {
           //   }
           // });
 
-          senderToBack("GENERATOR_DOCKER_SIZE", 1000000000);
+          // senderToBack("GENERATOR_DOCKER_SIZE", 1000000000);
           sandMessage.state = "SENDING_TAR_FROM_GENERATOR";
-          const testStream = fs.createReadStream("./project.tar");
+          const testStream = fs.createReadStream("./project.tar", {
+            highWaterMark: 1048576 * 16,
+          });
           let streamCount = 0;
           let appendedStreamData = "";
           testStream.on("data", (fileData) => {
@@ -197,14 +201,18 @@ export class Server {
             // const streamToString = fileData.toString("base64");
             // streamCount += 1;
             // appendedStreamData += streamToString;
-            // if (streamCount > 100) {
+            // if (streamCount > 10) {
             //   sandMessage.value = appendedStreamData;
             //   ws.send(JSON.stringify(sandMessage));
             //   streamCount = 0;
             //   appendedStreamData = "";
             // }
-            sandMessage.value = fileData.toString("base64");
-            ws.send(JSON.stringify(sandMessage));
+            /////이건 됨..
+            // sandMessage.value = fileData.toString("base64");
+            ws.send(fileData);
+          });
+          testStream.on("end", () => {
+            sandMessage.state = "DONE_SENDING_TAR_FROM_GENERATOR";
           });
         } else if (jsonMessage.state === "DOWNLOAD_DONE_FROM_GENERATOR") {
         }
