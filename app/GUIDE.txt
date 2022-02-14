@@ -1,0 +1,33 @@
+sudo docker load -i dockerized.tar
+
+sudo docker ps -a
+
+sudo docker images
+
+sudo docker rm 컨테이너
+
+sudo docker rmi 이미지
+
+
+sudo docker run -it -p 192.168.0.102:9229:9229 -p 192.168.0.102:2022:22 --name tobetest tobesoft:iot-project
+
+sudo docker star tobetest
+
+sudo docker exec -it tobetest /bin/ssh
+
+passwd root
+password
+password
+
+vim /etc/ssh/sshd_config
+
+수정(a) - PermitRootLogin yes #prohibit-password
+저장(:wq)
+
+service ssh start
+
+exit
+
+ssh root@localhost -p 2022
+
+ip addr show eth0
