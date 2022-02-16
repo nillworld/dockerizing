@@ -57,7 +57,6 @@ export class Server {
           } else if (jsonMessage.state === "MAKE_DOCKER_FILE") {
             exec("mkdir project", (err, out, stderr) => {
               console.log(err);
-              console.log("docker 만들기");
               fs.writeFile(
                 "./project/Dockerfile",
                 jsonMessage.dockerForm,
@@ -97,7 +96,6 @@ export class Server {
             });
             senderToBack("SET_FILE_INFO");
           } else if (jsonMessage.state === "SET_DOCKER_NAME") {
-            console.log("????????????????????", jsonMessage);
             dockerImgName = jsonMessage.value;
             senderToBack("SET_DOCKER_NAME");
           } else if (jsonMessage.state === "SET_DOCKER_TAG") {
@@ -140,8 +138,7 @@ export class Server {
             dockerBuild.stderr.on("data", (message) => {
               const dockerBuildDoneMessage =
                 "Use 'docker scan' to run Snyk tests against images to find vulnerabilities and learn how to fix them";
-              console.log(message.toString().indexOf(dockerBuildDoneMessage));
-              console.log("message", message.toString());
+              console.log("message: ", message.toString());
               if (message.toString().indexOf(dockerBuildDoneMessage) >= 0) {
                 try {
                   fs.rmdirSync("./project", { recursive: true });
