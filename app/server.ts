@@ -22,6 +22,8 @@ export class Server {
         state: "START",
         value: "",
       };
+      let dockerImgName = "";
+      let dockerImgTag = "";
       let downloadedFileSize = 0;
       let downloadedPercent = "";
       let tarFile: fs.StatsBase<number>;
@@ -94,6 +96,13 @@ export class Server {
               }
             });
             senderToBack("SET_FILE_INFO");
+          } else if (jsonMessage.state === "SET_DOCKER_NAME") {
+            console.log("????????????????????", jsonMessage);
+            dockerImgName = jsonMessage.value;
+            senderToBack("SET_DOCKER_NAME");
+          } else if (jsonMessage.state === "SET_DOCKER_TAG") {
+            dockerImgTag = jsonMessage.value;
+            senderToBack("SET_DOCKER_TAG");
           } else if (jsonMessage.state === "GENERATOR_TAR_DECOMPRESS") {
             tar
               .x({
@@ -122,7 +131,7 @@ export class Server {
               "-f",
               "./project/Dockerfile",
               "-t",
-              "tobesoft:iot-project",
+              `${dockerImgName}:${dockerImgTag}`,
               ".",
             ]);
             // dockerBuild.stdout.on("data", (message) => {
@@ -144,8 +153,13 @@ export class Server {
               }
             });
           } else if (jsonMessage.state === "GENERATOR_DOCKER_SAVE") {
-            spawnSync("docker", ["save", "-o", "project.tar", "tobesoft"]);
-            spawn("docker", ["rmi", "tobesoft:iot-project"]);
+            spawnSync("docker", [
+              "save",
+              "-o",
+              "project.tar",
+              `${dockerImgName}:${dockerImgTag}`,
+            ]);
+            spawn("docker", ["rmi", `${dockerImgName}:${dockerImgTag}`]);
             console.log(
               "도커 이미지 tar로 save 완료 및 docker 이미지 삭제 완료. "
             );
