@@ -105,6 +105,7 @@ export class Server {
             tar
               .x({
                 file: "./project/project.tar",
+                C: "./project",
               })
               .then(() => {
                 console.log("done");
