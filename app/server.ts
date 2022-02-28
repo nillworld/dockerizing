@@ -139,12 +139,24 @@ export class Server {
             dockerBuild.stderr.on("data", (message) => {
               const dockerBuildDoneMessage =
                 "Use 'docker scan' to run Snyk tests against images to find vulnerabilities and learn how to fix them";
+              const dockerErrorDoneMessage =
+                "This error may indicate that the docker daemon is not running.";
               console.log("message: ", message.toString());
               if (message.toString().indexOf(dockerBuildDoneMessage) >= 0) {
                 try {
-                  fs.rmdirSync("./project", { recursive: true });
+                  deleteFolderRecursive("./project");
                   console.log(`project dir is deleted!`);
+                  downloadedFileSize = 0;
                   senderToBack("GENERATOR_DOCKER_BUILD_DONE");
+                } catch (err) {
+                  console.error(`Error while deleting project dir.`);
+                }
+              }
+              if (message.toString().indexOf(dockerErrorDoneMessage) >= 0) {
+                try {
+                  deleteFolderRecursive("./project");
+                  downloadedFileSize = 0;
+                  senderToBack("GENERATOR_DOCKER_BUILD_ERROR");
                 } catch (err) {
                   console.error(`Error while deleting project dir.`);
                 }
@@ -198,5 +210,20 @@ export class Server {
     this.wss.on("error", function (error: any) {
       console.log(error);
     });
+
+    const deleteFolderRecursive = function (path: string) {
+      if (fs.existsSync(path)) {
+        fs.readdirSync(path).forEach(function (file, index) {
+          const curPath = path + "/" + file;
+          if (fs.lstatSync(curPath).isDirectory()) {
+            deleteFolderRecursive(curPath);
+          } else {
+            fs.unlinkSync(curPath);
+          }
+        });
+
+        fs.rmdirSync(path);
+      }
+    };
   }
 }
