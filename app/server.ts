@@ -139,8 +139,9 @@ export class Server {
             dockerBuild.stderr.on("data", (message) => {
               const dockerBuildDoneMessage =
                 "Use 'docker scan' to run Snyk tests against images to find vulnerabilities and learn how to fix them";
-              const dockerErrorDoneMessage =
+              const dockerDemonErrorMessage =
                 "This error may indicate that the docker daemon is not running.";
+              const dockerBuildErrorMessage = "executor failed running";
               console.log("message: ", message.toString());
               if (message.toString().indexOf(dockerBuildDoneMessage) >= 0) {
                 try {
@@ -152,7 +153,16 @@ export class Server {
                   console.error(`Error while deleting project dir.`);
                 }
               }
-              if (message.toString().indexOf(dockerErrorDoneMessage) >= 0) {
+              if (message.toString().indexOf(dockerDemonErrorMessage) >= 0) {
+                try {
+                  deleteFolderRecursive("./project");
+                  downloadedFileSize = 0;
+                  senderToBack("GENERATOR_DOCKER_DEMON_ERROR");
+                } catch (err) {
+                  console.error(`Error while deleting project dir.`);
+                }
+              }
+              if (message.toString().indexOf(dockerBuildErrorMessage) >= 0) {
                 try {
                   deleteFolderRecursive("./project");
                   downloadedFileSize = 0;
