@@ -142,6 +142,8 @@ export class Server {
               const dockerDemonErrorMessage =
                 "This error may indicate that the docker daemon is not running.";
               const dockerBuildErrorMessage = "executor failed running";
+              const dockerBuildErrorMessage2 =
+                "failed to solve with frontend dockerfile";
               console.log("message: ", message.toString());
               if (message.toString().indexOf(dockerBuildDoneMessage) >= 0) {
                 try {
@@ -162,7 +164,10 @@ export class Server {
                   console.error(`Error while deleting project dir.`);
                 }
               }
-              if (message.toString().indexOf(dockerBuildErrorMessage) >= 0) {
+              if (
+                message.toString().indexOf(dockerBuildErrorMessage) >= 0 ||
+                message.toString().indexOf(dockerBuildErrorMessage2) >= 0
+              ) {
                 try {
                   deleteFolderRecursive("./project");
                   downloadedFileSize = 0;
